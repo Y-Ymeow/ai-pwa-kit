@@ -1,0 +1,25 @@
+# Docs 文件夹忽略规则
+# 此文件夹下的所有内容都不提交到 Git
+
+# 忽略所有 markdown 文件
+*.md
+
+# 忽略所有文本文件
+*.txt
+
+# 但保留 README.md 和 template.md（可选，如果需要模板）
+!README.md
+!template.md
+
+# 忽略临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# 忽略编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

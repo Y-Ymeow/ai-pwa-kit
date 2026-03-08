@@ -1,0 +1,33 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AI 开发文档（本地任务管理，不提交）
+docs/01-规划中/
+docs/02-进行中/
+docs/03-待审查/
+docs/04-待处理修复/
+docs/05-已完成/
+# 保留 docs/README.md 和 docs/template.md 作为模板
+package-lock.json
