@@ -367,15 +367,14 @@ const results = await memory.search('深色主题', { limit: 5 });
 import { 
   Agent, 
   createAgent, 
-  createCoderAgent,
-  getBasicTools 
 } from './framework/agent';
+import { createCoderAgent } from './framework';
 
 // 方式一：从预设创建
 const coder = createCoderAgent(core);
 const result = await coder.execute('帮我分析这个代码文件');
 console.log(result.output);
-
+```
 // 方式二：自定义配置
 const agent = createAgent(core, {
   name: 'my-agent',
@@ -430,11 +429,8 @@ const prompt = getPresetPrompt('react');
 import { 
   Store, 
   createStore, 
-  createSlice,
-  counterSlice,
-  userSlice,
-  themeSlice
 } from './framework/state';
+import { initSlice, createSlice } from './framework';
 
 // 创建 Store
 const store = createStore({
@@ -452,18 +448,21 @@ store.setState({ count: 10 });
 store.updateState(state => ({ count: state.count + 1 }));
 
 // 使用切片
-const counter = counterSlice(store);
-counter.increment(); // count + 1
-counter.decrement(); // count - 1
-console.log(counter.getCount()); // 获取当前值
+const counter = initSlice(store, 'counter', { value: 0 });
+counter.setState(s => ({ value: s.value + 1 }));
+console.log(counter.getState().value); // 1
 
 // 自定义切片
-const todoSlice = createSlice('todos', [], {
-  add: (state, todo) => [...state, todo],
-  remove: (state, id) => state.filter(t => t.id !== id),
-  toggle: (state, id) => state.map(t => 
-    t.id === id ? { ...t, done: !t.done } : t
-  )
+const todoSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    add: (state, todo) => [...state, todo],
+    remove: (state, id) => (state as any[]).filter(t => t.id !== id),
+    toggle: (state, id) => (state as any[]).map(t => 
+      t.id === id ? { ...t, done: !t.done } : t
+    )
+  }
 });
 ```
 
