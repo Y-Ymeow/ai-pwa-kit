@@ -144,9 +144,19 @@
             return;
           }
 
+          // 根据 responseType 解析数据
+          let data = response.responseText;
+          if (config.responseType === 'json' && typeof data === 'string') {
+            try {
+              data = JSON.parse(data);
+            } catch (e) {
+              logger.error('Failed to parse JSON:', e);
+            }
+          }
+
           resolve({
             success: true,
-            data: response.responseText,
+            data: data,
             status: response.status,
             statusText: response.statusText,
             headers: parseResponseHeaders(response.responseHeaders),
