@@ -26,7 +26,7 @@ async function sendRequest(config) {
     const response = await fetch(url, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? (typeof body === 'object' ? JSON.stringify(body) : body) : undefined,
       signal: controller.signal,
     });
 
@@ -85,7 +85,7 @@ async function* sendStreamRequest(config) {
         'Accept': 'text/event-stream',
         ...headers,
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? (typeof body === 'object' ? JSON.stringify(body) : body) : undefined,
       signal: controller.signal,
     });
 

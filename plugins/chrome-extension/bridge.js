@@ -19,12 +19,18 @@
   function request(config) {
     return new Promise((resolve, reject) => {
       const id = ++requestId;
+      
+      const timer = setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+        reject(new Error('Request timeout'));
+      }, config.timeout || 30000);
 
       const handleMessage = (event) => {
         if (event.source !== window) return;
         if (event.data?.type !== 'REQUEST_BRIDGE_RESPONSE') return;
         if (event.data?.id !== id) return;
 
+        clearTimeout(timer);
         window.removeEventListener('message', handleMessage);
 
         const response = event.data.data;
@@ -44,14 +50,7 @@
         config,
         stream: false,
       }, '*');
-
-      // 超时处理
-      setTimeout(() => {
-        window.removeEventListener('message', handleMessage);
-        reject(new Error('Request timeout'));
-      }, config.timeout || 30000);
     });
-  }
 
   /**
    * 流式请求
