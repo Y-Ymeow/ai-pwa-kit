@@ -31,8 +31,8 @@ import type { AIResponse, AIStreamChunk } from '../../types';
 import {
   sendAIRequest,
   aiStreamGenerator,
-  RequestError,
 } from '../ai-request';
+import { RequestError } from '../ai-request';
 
 /**
  * OpenAI 兼容 Provider 配置

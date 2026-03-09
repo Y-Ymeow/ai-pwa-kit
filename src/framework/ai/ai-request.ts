@@ -1,7 +1,7 @@
 /**
  * AI Request Module
  * 基于通用 requests 模块的 AI 专用请求封装
- * 
+ *
  * 提供 AI 特定的功能：
  * - OpenAI/Claude 流式响应解析
  * - SSE 数据解析
@@ -11,7 +11,6 @@
 
 import {
   RequestManager,
-  FetchAdapter,
   RequestError,
   createAutoExternalAdapter,
 } from '../requests';
@@ -19,12 +18,11 @@ import {
 import type {
   RequestConfig,
   ResponseData,
-  StreamChunk,
 } from '../requests';
 
 import type { AIResponse, AIStreamChunk } from '../types';
 
-export { RequestError } from '../requests';
+export { RequestError };
 
 /**
  * AI 请求配置
@@ -150,7 +148,7 @@ export async function* aiStreamGenerator(
       const errorMessage = (errorData && typeof errorData === 'object' && 'error' in errorData)
         ? String((errorData as Record<string, unknown>).error)
         : `HTTP ${response.status}`;
-      throw new RequestError(errorMessage, response.status, errorData);
+      throw new RequestError(errorMessage, { status: response.status, response: errorData });
     }
 
     if (!response.body) {
@@ -282,7 +280,7 @@ export async function sendAIRequestWithRetry<T = unknown>(
   retries = 3
 ): Promise<ResponseData<T>> {
   const manager = createAIRequestManager();
-  return manager.requestWithRetry<T>(config, { retries });
+  return manager.request<T>(config, { retry: { maxRetries: retries } });
 }
 
 // 重导出 requests 模块的常用功能

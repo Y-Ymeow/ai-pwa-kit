@@ -8,11 +8,12 @@ import type {
   RequestConfig,
   ResponseData,
   StreamChunk,
-  RequestError,
   RequestManagerConfig,
   RequestInterceptor,
   RetryConfig,
 } from './types';
+
+import { RequestError } from './types';
 import { FetchAdapter } from './adapters/fetch';
 
 export class RequestManager {
@@ -49,7 +50,7 @@ export class RequestManager {
   /**
    * 获取适配器
    */
-  get(name?: string): IRequestAdapter {
+  getAdapter(name?: string): IRequestAdapter {
     const adapterName = name || this.defaultAdapter;
     const adapter = this.adapters.get(adapterName);
 
@@ -88,7 +89,7 @@ export class RequestManager {
    * 检查适配器是否可用
    */
   isAvailable(name: string): boolean {
-    return this.adapters.has(name) && this.adapters.get(name)!.isSupported();
+    return this.adapters.has(name) && this.getAdapter(name).isSupported();
   }
 
   /**
@@ -232,7 +233,7 @@ export class RequestManager {
       retry?: RetryConfig;
     }
   ): Promise<ResponseData<T>> {
-    const adapter = this.get(options?.adapter);
+    const adapter = this.getAdapter(options?.adapter);
 
     try {
       // 合并配置
@@ -329,7 +330,7 @@ export class RequestManager {
       adapter?: string;
     }
   ): AsyncIterableIterator<StreamChunk> {
-    const adapter = this.get(options?.adapter);
+    const adapter = this.getAdapter(options?.adapter);
 
     if (!adapter.stream) {
       throw new RequestError(`Adapter '${adapter.name}' does not support streaming`);
@@ -387,7 +388,7 @@ export class RequestManager {
    */
   async init(adapterName?: string): Promise<void> {
     if (adapterName) {
-      const adapter = this.get(adapterName);
+      const adapter = this.getAdapter(adapterName);
       if (adapter.init) {
         await adapter.init();
       }

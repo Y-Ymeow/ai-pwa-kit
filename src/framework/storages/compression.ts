@@ -83,7 +83,7 @@ export class Compression {
     const reader = stream.readable.getReader();
 
     // 写入数据
-    writer.write(data);
+    writer.write(data.buffer as ArrayBuffer);
     writer.close();
 
     // 读取压缩后的数据
@@ -117,7 +117,7 @@ export class Compression {
     const reader = stream.readable.getReader();
 
     // 写入数据
-    writer.write(data);
+    writer.write(data.buffer as ArrayBuffer);
     writer.close();
 
     // 读取解压后的数据
@@ -259,22 +259,25 @@ export class Compression {
     const algorithm = opts.algorithm || 'gzip';
 
     let compressed: Uint8Array;
+    let usedAlgorithm: string = algorithm;
 
-    if (this.isCompressionStreamSupported() && algorithm !== 'simple') {
+    if (this.isCompressionStreamSupported() && (algorithm === 'gzip' || algorithm === 'deflate')) {
       try {
         compressed = await this.compressWithStream(data, algorithm);
+        usedAlgorithm = algorithm;
       } catch {
         // 降级到简单压缩
         compressed = this.compressSimple(data);
+        usedAlgorithm = 'simple';
       }
     } else {
       compressed = this.compressSimple(data);
-      opts.algorithm = 'simple';
+      usedAlgorithm = 'simple';
     }
 
     // 添加头部
     if (opts.addHeader) {
-      compressed = this.addHeader(compressed, opts.algorithm);
+      compressed = this.addHeader(compressed, usedAlgorithm);
     }
 
     const originalSize = data.length;
@@ -286,7 +289,7 @@ export class Compression {
       originalSize,
       compressedSize,
       ratio: Math.max(0, ratio),
-      algorithm: opts.algorithm,
+      algorithm: usedAlgorithm,
     };
   }
 
@@ -306,7 +309,7 @@ export class Compression {
 
     if (this.isCompressionStreamSupported()) {
       try {
-        return await this.decompressWithStream(compressedData, algorithm);
+        return await this.decompressWithStream(compressedData, algorithm as string);
       } catch {
         // 如果解压失败，尝试简单解压
         return this.decompressSimple(compressedData);

@@ -11,7 +11,7 @@ import type { ToolCall } from '../../types';
  */
 export interface ToolParameter {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object';
-  description: string;
+  description?: string;
   enum?: unknown[];
   required?: boolean;
   /** 对象类型的属性定义 */

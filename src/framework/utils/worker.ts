@@ -77,6 +77,7 @@ export class WorkerManager {
   >();
   private messageHandler: ((e: MessageEvent) => void) | null = null;
   private idCounter = 0;
+  private options: WorkerOptions;
 
   /**
    * 创建 Worker 管理器
@@ -85,17 +86,17 @@ export class WorkerManager {
    */
   constructor(
     workerScript: string | ((ctx: Worker) => void),
-    private options: WorkerOptions = {}
+    options: WorkerOptions = {},
   ) {
-    if (typeof workerScript === 'string') {
+    this.options = options;
+    if (typeof workerScript === "string") {
       this.url = workerScript;
       this.worker = new Worker(workerScript, { name: options.name });
     } else {
       // 内联 Worker
-      const blob = new Blob(
-        [`(${workerScript.toString()})(self)`],
-        { type: 'application/javascript' }
-      );
+      const blob = new Blob([`(${workerScript.toString()})(self)`], {
+        type: "application/javascript",
+      });
       this.url = URL.createObjectURL(blob);
       this.worker = new Worker(this.url, { name: options.name });
     }
@@ -131,7 +132,7 @@ export class WorkerManager {
       }
     };
 
-    this.worker?.addEventListener('message', this.messageHandler);
+    this.worker?.addEventListener("message", this.messageHandler);
   }
 
   /**
@@ -157,11 +158,11 @@ export class WorkerManager {
   exec<T = unknown, R = unknown>(
     type: string,
     payload: T,
-    timeout?: number
+    timeout?: number,
   ): Promise<R> {
     return new Promise((resolve, reject) => {
       if (!this.worker) {
-        reject(new Error('Worker has been terminated'));
+        reject(new Error("Worker has been terminated"));
         return;
       }
 
@@ -173,11 +174,17 @@ export class WorkerManager {
       // 设置超时
       const timer = setTimeout(() => {
         this.pendingTasks.delete(id);
-        reject(new Error(`Worker task "${type}" timeout after ${taskTimeout}ms`));
+        reject(
+          new Error(`Worker task "${type}" timeout after ${taskTimeout}ms`),
+        );
       }, taskTimeout);
 
       // 存储任务
-      this.pendingTasks.set(id, { resolve: resolve as (value: unknown) => void, reject, timer });
+      this.pendingTasks.set(id, {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        timer,
+      });
 
       // 发送消息
       this.worker.postMessage(message);
@@ -192,7 +199,7 @@ export class WorkerManager {
    */
   post<T = unknown>(type: string, payload: T): void {
     if (!this.worker) {
-      throw new Error('Worker has been terminated');
+      throw new Error("Worker has been terminated");
     }
 
     const id = this.generateId();
@@ -206,7 +213,7 @@ export class WorkerManager {
    * @param handler 消息处理器
    */
   onMessage(handler: (message: WorkerMessage) => void): void {
-    this.worker?.addEventListener('message', (e) => {
+    this.worker?.addEventListener("message", (e) => {
       handler(e.data as WorkerMessage);
     });
   }
@@ -217,7 +224,7 @@ export class WorkerManager {
    * @param handler 错误处理器
    */
   onError(handler: (error: ErrorEvent) => void): void {
-    this.worker?.addEventListener('error', handler);
+    this.worker?.addEventListener("error", handler);
   }
 
   /**
@@ -239,13 +246,13 @@ export class WorkerManager {
     // 拒绝所有未完成的任务
     for (const [id, task] of this.pendingTasks) {
       if (task.timer) clearTimeout(task.timer);
-      task.reject(new Error('Worker terminated'));
+      task.reject(new Error("Worker terminated"));
     }
     this.pendingTasks.clear();
 
     // 移除事件监听
     if (this.messageHandler) {
-      this.worker.removeEventListener('message', this.messageHandler);
+      this.worker.removeEventListener("message", this.messageHandler);
     }
 
     // 终止 Worker
@@ -253,7 +260,7 @@ export class WorkerManager {
     this.worker = null;
 
     // 释放 blob URL
-    if (this.url.startsWith('blob:')) {
+    if (this.url.startsWith("blob:")) {
       URL.revokeObjectURL(this.url);
     }
   }
@@ -297,7 +304,7 @@ export class WorkerManager {
      */
     constructor(
       script: string | ((ctx: Worker) => void),
-      options: WorkerPoolOptions
+      options: WorkerPoolOptions,
     ) {
       this.script = script;
       this.options = { reuse: true, ...options };
@@ -308,7 +315,7 @@ export class WorkerManager {
           new WorkerManager(script, {
             name: `pool-worker-${i}`,
             timeout: options.timeout,
-          })
+          }),
         );
       }
     }
@@ -335,9 +342,11 @@ export class WorkerManager {
      * @returns Promise 数组
      */
     async execAll<T = unknown, R = unknown>(
-      tasks: Array<{ type: string; payload: T }>
-    ): Promise<R[]> {
-      return Promise.all(tasks.map((task) => this.exec(task.type, task.payload)));
+      tasks: Array<{ type: string; payload: T }>,
+    ): Promise<any[]> {
+      return Promise.all(
+        tasks.map((task) => this.exec(task.type, task.payload)),
+      );
     }
 
     /**
@@ -392,7 +401,7 @@ export class WorkerManager {
  */
 export function createWorker(
   fn: (ctx: Worker) => void,
-  options?: WorkerOptions
+  options?: WorkerOptions,
 ): WorkerManager {
   return new WorkerManager(fn, options);
 }
@@ -406,7 +415,7 @@ export function createWorker(
  */
 export function createWorkerFromFile(
   scriptPath: string,
-  options?: WorkerOptions
+  options?: WorkerOptions,
 ): WorkerManager {
   return new WorkerManager(scriptPath, options);
 }
@@ -432,7 +441,7 @@ export function createWorkerFromFile(
  */
 export function createWorkerPool(
   script: string | ((ctx: Worker) => void),
-  options: WorkerPoolOptions
+  options: WorkerPoolOptions,
 ): InstanceType<typeof WorkerManager.Pool> {
   return new WorkerManager.Pool(script, options);
 }

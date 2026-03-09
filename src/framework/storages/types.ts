@@ -49,6 +49,12 @@ export interface StorageConfig {
   };
 }
 
+/** 默认加密实现（空操作） */
+export const defaultEncryption = {
+  encrypt: (data: string) => data,
+  decrypt: (data: string) => data,
+};
+
 /**
  * 存储查询选项
  */
@@ -98,7 +104,7 @@ export interface IStorage {
    * @param key 键名
    * @returns 存储的值，不存在返回 null
    */
-  get<T = StorageValue>(key: string): Promise<StorageEntry<T> | null>;
+  get<T extends StorageValue = StorageValue>(key: string): Promise<StorageEntry<T> | null>;
   
   /**
    * 设置值
@@ -107,7 +113,7 @@ export interface IStorage {
    * @param ttl 过期时间（毫秒，可选）
    * @param metadata 元数据（可选）
    */
-  set<T = StorageValue>(
+  set<T extends StorageValue = StorageValue>(
     key: string,
     value: T,
     ttl?: number,
@@ -136,7 +142,7 @@ export interface IStorage {
    * 获取所有条目
    * @param options 查询选项
    */
-  getAll<T = StorageValue>(options?: StorageQueryOptions): Promise<StorageEntry<T>[]>;
+  getAll<T extends StorageValue = StorageValue>(options?: StorageQueryOptions): Promise<StorageEntry<T>[]>;
   
   /**
    * 清空存储

@@ -5,15 +5,14 @@
 
 import type {
   ModelSchema,
-  FieldDefinition,
   ModelData,
   FilterCondition,
   QueryOptions,
-  SortOptions,
   BatchResult,
   ChangeLog,
+  TransactionMode,
 } from './types';
-import type { IDBDatabase } from './database';
+import type { DatabaseManager } from './database';
 import { QueryBuilder } from './query';
 
 /**
@@ -21,7 +20,7 @@ import { QueryBuilder } from './query';
  */
 export class Model<T extends ModelData = ModelData> {
   /** 数据库实例 */
-  protected db: IDBDatabase;
+  protected db: DatabaseManager;
   /** 模型名称 */
   readonly name: string;
   /** 字段定义 */
@@ -32,7 +31,7 @@ export class Model<T extends ModelData = ModelData> {
   protected enableChangeLog: boolean;
 
   constructor(
-    db: IDBDatabase,
+    db: DatabaseManager,
     name: string,
     schema: ModelSchema,
     options?: {
@@ -52,7 +51,7 @@ export class Model<T extends ModelData = ModelData> {
   /**
    * 获取对象存储
    */
-  protected getStore(mode: IDBTransactionMode = 'readonly'): IDBObjectStore {
+  protected getStore(mode: TransactionMode = 'readonly'): IDBObjectStore {
     return this.db.getObjectStore(this.name, mode);
   }
 
@@ -561,7 +560,7 @@ export class Model<T extends ModelData = ModelData> {
  * 创建模型工厂函数
  */
 export function createModel<T extends ModelData>(
-  db: IDBDatabase,
+  db: DatabaseManager,
   name: string,
   schema: ModelSchema,
   options?: {

@@ -8,8 +8,9 @@ import type {
   RequestConfig,
   ResponseData,
   StreamChunk,
-  RequestError,
 } from '../types';
+
+import { RequestError } from '../types';
 
 /**
  * Axios 实例接口（避免直接依赖 axios）
@@ -210,14 +211,14 @@ export class AxiosAdapter implements IRequestAdapter {
 
       // 在 Node.js 中，response.data 是流
       const stream = response.data as {
-        on(event: string, callback: (chunk: Buffer | string) => void): void;
+        on(event: string, callback: (chunk: unknown) => void): void;
       };
 
       const chunks: string[] = [];
       let resolver: (() => void) | null = null;
 
-      stream.on('data', (chunk: Buffer) => {
-        chunks.push(chunk.toString());
+      stream.on('data', (chunk: unknown) => {
+        chunks.push(typeof chunk === 'string' ? chunk : String(chunk));
         if (resolver) {
           resolver();
           resolver = null;

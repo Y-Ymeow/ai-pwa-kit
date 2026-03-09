@@ -1,17 +1,17 @@
 /**
  * IndexedDB ORM Module
  * 类 ORM 的 IndexedDB 操作模块
- * 
+ *
  * @example
  * ```typescript
- * import { 
- *   IDBDatabase, 
- *   Model, 
+ * import {
+ *   IDBDatabase,
+ *   Model,
  *   createDatabase,
  *   defineSchema,
- *   field 
+ *   field
  * } from './indexeddb';
- * 
+ *
  * // 创建数据库
  * const db = createDatabase({
  *   name: 'my-app',
@@ -30,9 +30,9 @@
  *     }
  *   ]
  * });
- * 
+ *
  * await db.init();
- * 
+ *
  * // 定义模型
  * const User = new Model(db, 'users', {
  *   id: field.primary(),
@@ -41,13 +41,13 @@
  *   age: field.number(),
  *   createdAt: field.date({ default: () => new Date() })
  * });
- * 
+ *
  * // CRUD 操作
  * const user = await User.create({ name: '张三', email: 'zhang@example.com', age: 25 });
  * const found = await User.findById(user.id);
  * const updated = await User.update(user.id, { age: 26 });
  * await User.delete(user.id);
- * 
+ *
  * // 查询
  * const users = await User.findMany({
  *   where: { age: { $gte: 18 }, name: { $like: '张%' } },
@@ -56,6 +56,15 @@
  * });
  * ```
  */
+
+import type {
+  FieldDefinition,
+  ModelSchema,
+  ModelData,
+} from './types';
+
+import { DatabaseManager } from './database';
+import { Model } from './model';
 
 // 类型导出
 export type {
@@ -83,11 +92,14 @@ export type {
 
 // 数据库管理
 export {
-  IDBDatabase,
+  DatabaseManager,
   createDatabase,
   getDatabase,
   removeDatabase,
 } from './database';
+
+// 为向后兼容保留 IDBDatabase 别名
+export { DatabaseManager as IDBDatabase } from './database';
 
 // 模型
 export {
@@ -191,9 +203,9 @@ export function defineSchema(fields: ModelSchema): ModelSchema {
  * 创建模型类工厂
  */
 export function createModelClass<T extends ModelData>(
-  db: IDBDatabase,
+  db: DatabaseManager,
   name: string,
   schema: ModelSchema
-) {
+): Model<T> {
   return new Model<T>(db, name, schema);
 }

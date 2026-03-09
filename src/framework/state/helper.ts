@@ -5,7 +5,7 @@
 
 import { Store, getGlobalStore } from './store';
 import { createSlice, SliceStore } from './slice';
-import type { StateConfig, StateSubscriber, StateHooks } from './types';
+import type { StateConfig, StateSubscriber } from './types';
 
 /**
  * 创建简单状态（类似 React useState，但跨框架）
@@ -36,7 +36,7 @@ export function useState<T>(
     }
   };
   const subscribe = (callback: StateSubscriber<T>) => {
-    return store.watch(key as keyof { [k: string]: T }, callback as StateSubscriber<T[keyof { [k: string]: T }]>);
+    return store.watch(key as keyof { [k: string]: T }, callback as StateSubscriber<T>);
   };
 
   return [getState, setState, subscribe];
@@ -49,7 +49,7 @@ export function useState<T>(
 export function useGlobalState<T extends Record<string, unknown>>(
   config: StateConfig<T> & { name: string }
 ): Store<T> {
-  return getGlobalStore(config.name, config);
+  return getGlobalStore<T>(config.name, config) as Store<T>;
 }
 
 /**
@@ -176,18 +176,21 @@ export function createUserSlice() {
       permissions: [] as string[],
     },
     reducers: {
-      setUser: (state, payload: { id: string; name: string; email: string; avatar?: string }) => ({
+      setUser: (state, payload: unknown) => {
+        const p = payload as { id: string; name: string; email: string; avatar?: string };
+        return {
+          ...state,
+          ...p,
+          isLogin: true,
+        };
+      },
+      updateProfile: (state, payload: unknown) => ({
         ...state,
-        ...payload,
-        isLogin: true,
+        ...(payload as Partial<typeof state>),
       }),
-      updateProfile: (state, payload: Partial<typeof state>) => ({
+      setPermissions: (state, payload: unknown) => ({
         ...state,
-        ...payload,
-      }),
-      setPermissions: (state, payload: string[]) => ({
-        ...state,
-        permissions: payload,
+        permissions: payload as string[],
       }),
       logout: () => ({
         id: '',
@@ -214,21 +217,25 @@ export function createThemeSlice() {
       compact: false,
     },
     reducers: {
-      setMode: (state, payload: 'light' | 'dark' | 'auto') => ({
+      setMode: (state, payload: unknown) => ({
         ...state,
-        mode: payload,
+        mode: payload as 'light' | 'dark' | 'auto',
       }),
-      toggleMode: (state) => ({
+      toggleMode: (state, payload: unknown) => {
+        const s = state as { mode: 'light' | 'dark' | 'auto'; primaryColor: string; fontSize: number; compact: boolean };
+        const newMode = s.mode === 'light' ? 'dark' as const : 'light' as const;
+        return {
+          ...s,
+          mode: newMode,
+        };
+      },
+      setPrimaryColor: (state, payload: unknown) => ({
         ...state,
-        mode: state.mode === 'light' ? 'dark' : 'light',
+        primaryColor: payload as string,
       }),
-      setPrimaryColor: (state, payload: string) => ({
+      setFontSize: (state, payload: unknown) => ({
         ...state,
-        primaryColor: payload,
-      }),
-      setFontSize: (state, payload: number) => ({
-        ...state,
-        fontSize: payload,
+        fontSize: payload as number,
       }),
       toggleCompact: (state) => ({
         ...state,
@@ -266,17 +273,17 @@ export function createCounterSlice() {
           history: [...state.history, newValue],
         };
       },
-      add: (state, payload: number) => {
-        const newValue = state.value + payload;
+      add: (state, payload: unknown) => {
+        const newValue = state.value + (payload as number);
         return {
           ...state,
           value: newValue,
           history: [...state.history, newValue],
         };
       },
-      setStep: (state, payload: number) => ({
+      setStep: (state, payload: unknown) => ({
         ...state,
-        step: payload,
+        step: payload as number,
       }),
       reset: (state) => ({
         ...state,
@@ -295,7 +302,7 @@ export function createCounterSlice() {
  * 连接 React Hook（如果需要 React 支持）
  * 这是一个示例，展示如何与 React 集成
  */
-export function createReactHook<T>(store: Store<T>) {
+export function createReactHook<T extends Record<string, unknown>>(store: Store<T>) {
   return function useStore(): [T, (updater: Partial<T> | ((prev: T) => Partial<T>)) => void] {
     const [state, setState] = (globalThis as { React?: { useState: (init: T) => [T, (s: T) => void] } }).React?.useState?.(store.getState()) || [store.getState(), () => {}];
 
@@ -306,7 +313,7 @@ export function createReactHook<T>(store: Store<T>) {
     }, []);
 
     const setStoreState = (updater: Partial<T> | ((prev: T) => Partial<T>)) => {
-      store.setState(updater);
+      store.setState(updater as Partial<T>);
     };
 
     return [state, setStoreState];
@@ -318,7 +325,7 @@ export function createReactHook<T>(store: Store<T>) {
  * @param store Store 实例
  * @param selector 选择器函数
  */
-export function createSelectorHook<T, R>(
+export function createSelectorHook<T extends Record<string, unknown>, R>(
   store: Store<T>,
   selector: (state: T) => R
 ): () => R {

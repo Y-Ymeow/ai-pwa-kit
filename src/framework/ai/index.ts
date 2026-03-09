@@ -75,20 +75,18 @@ export { FrameworkCore, type CoreConfig, type ExecuteOptions } from './core';
 // Request - AI HTTP 请求
 export {
   // AI 特定功能
-  parseOpenAIStreamChunk,
   parseSSEChunk,
   aiStreamGenerator,
   createAIRequestManager,
   sendAIRequest,
   streamAIRequest,
   sendAIRequestWithRetry,
-  
+
   // 重导出 requests 模块
   RequestManager,
-  FetchAdapter,
   createAutoExternalAdapter,
   RequestError,
-  
+
   // 类型
   type AIRequestConfig,
   type RequestConfig,

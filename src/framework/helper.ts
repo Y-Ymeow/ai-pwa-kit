@@ -1,7 +1,7 @@
 /**
  * Framework Helper Functions
  * 框架快捷创建函数
- * 
+ *
  * 提供常用的工厂函数和便捷方法，简化框架使用
  */
 
@@ -10,29 +10,30 @@ import { OpenAIProvider } from './ai/providers/openai';
 import {
   ProviderStorage,
   createProvider,
-  createOpenAI,
-  OpenAICompatibleProvider,
 } from './ai/providers';
 import { Memory } from './memory';
 import { StorageManager, OPFSStorage, LocalStorage, MemoryStorage } from './storages';
-import { RequestManager, FetchAdapter, createAutoExternalAdapter } from './requests';
+import { RequestManager, createAutoExternalAdapter } from './requests';
 import { IDBDatabase, Model, field, defineSchema } from './indexeddb';
 import { Agent, createAgent, createAgentFromPreset } from './agent';
-import { Store, createStore, getGlobalStore, createSlice, counterSlice, userSlice, themeSlice } from './state';
+import { Store, createStore, getGlobalStore, createSlice } from './state';
 import { EventBus, WorkerManager, createEventBus, createWorker, createWorkerPool } from './utils';
 import { Compression, createCompression, compressText, decompressText, compressObject, decompressObject } from './storages';
+import { FetchAdapter } from './requests/adapters/fetch';
 
 import type { CoreConfig } from './ai/core';
 import type { OpenAIConfig } from './ai/providers/openai';
-import type { OpenAICompatibleConfig } from './ai/providers';
 import type { MemoryConfig } from './memory';
 import type { StorageManagerConfig } from './storages';
 import type { RequestManagerConfig } from './requests';
 import type { DatabaseConfig, ModelSchema } from './indexeddb';
 import type { AgentConfig, AgentHooks } from './agent';
-import type { StateConfig, StateHooks } from './state';
-import type { EventHandler, EventOptions, WorkerOptions, WorkerPoolOptions } from './utils';
-import type { CompressionOptions, CompressionResult } from './storages';
+import type { StateConfig, StateSlice } from './state';
+import type { WorkerOptions, WorkerPoolOptions } from './utils';
+import type { CompressionOptions } from './storages';
+
+// 重新导出 FetchAdapter 以兼容旧代码
+export type { FetchAdapter } from './requests/adapters/fetch';
 
 // ==================== AI Core ====================
 
@@ -237,16 +238,15 @@ export function initFramework(options: {
   db?: IDBDatabase;
 } {
   // 初始化核心
-  const core = options.openai 
+  const core = options.openai
     ? initOpenAICore(options.openai.apiKey, { model: options.openai.model })
     : createCore();
 
   // 初始化存储
   const storageType = options.storage?.type || 'localStorage';
-  const storageName = options.storage?.name || 'app-storage';
-  
+
   const storage = new StorageManager({ defaultStorage: storageType });
-  
+
   // 初始化请求管理器
   const requests = initRequestManager();
 
@@ -318,15 +318,15 @@ export function createResearcherAgent(core: FrameworkCore, hooks?: AgentHooks): 
  * 创建状态管理器
  * @param config 状态配置
  */
-export function initStore<TState>(config?: StateConfig<TState>): Store<TState> {
-  return createStore(config);
+export function initStore<T extends Record<string, unknown> = Record<string, unknown>>(config?: StateConfig<T>): Store<T> {
+  return createStore(config ?? { initialState: {} as T }) as Store<T>;
 }
 
 /**
  * 获取全局状态管理器实例
  * @param name 实例名称
  */
-export function getGlobalStoreInstance(name: string = 'default'): Store | undefined {
+export function getGlobalStoreInstance(name: string = 'default'): Store<Record<string, unknown>> | undefined {
   return getGlobalStore(name);
 }
 
@@ -336,12 +336,12 @@ export function getGlobalStoreInstance(name: string = 'default'): Store | undefi
  * @param initialState 初始状态
  * @param reducers Reducer 函数
  */
-export function defineSlice<TState, TActions extends Record<string, (state: TState, payload?: unknown) => TState>>(
+export function defineSlice<TState extends Record<string, unknown>, TActions extends Record<string, (state: TState, payload?: unknown) => TState>>(
   name: string,
   initialState: TState,
   reducers: TActions
 ) {
-  return createSlice(name, initialState, reducers);
+  return createSlice({ name, initialState, reducers } as StateSlice<TState>);
 }
 
 // ==================== Providers ====================
@@ -388,7 +388,7 @@ export { createProvider };
 
 /**
  * 快速创建 OpenAI Provider
- * 
+ *
  * @param apiKey OpenAI API Key
  * @param options 可选配置
  */
@@ -400,16 +400,14 @@ export function initOpenAI(
     project?: string;
   }
 ) {
-  return createOpenAI(apiKey, options);
+  return createOpenAI({
+    name: 'openai',
+    apiKey,
+    ...options,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  } as OpenAIConfig);
 }
-
-// 重新导出
-export {
-  // 类
-  OpenAICompatibleProvider,
-  // 工厂方法
-  createOpenAI,
-};
 
 // ==================== Utils ====================
 
@@ -447,7 +445,6 @@ export {
   EventBus,
   WorkerManager,
   createEventBus,
-  getGlobalEventBus,
   createWorker,
   createWorkerPool,
 };

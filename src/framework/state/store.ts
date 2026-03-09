@@ -13,7 +13,6 @@ import type {
   StateChangeInfo,
   StateHooks,
   PersistStorage,
-  CompareOptions,
 } from './types';
 
 /**

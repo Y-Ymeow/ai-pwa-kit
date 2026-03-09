@@ -39,7 +39,6 @@ export type {
   RequestConfig,
   ResponseData,
   StreamChunk,
-  RequestError,
   ExternalRequestInterface,
   ExternalAdapterConfig,
   RequestInterceptor,
@@ -59,7 +58,7 @@ export {
   createGMAdapter,
   createChromeAdapter,
   createAutoExternalAdapter,
-  type GM_xmlhttpRequest,
+  type GMXmlHttpRequest,
   type ChromeExtensionInterface,
 } from './adapters/external';
 

@@ -102,7 +102,6 @@ export const searchTool: AgentTool = {
       limit: {
         type: 'number',
         description: '返回结果数量',
-        default: 5,
       },
     },
     required: ['query'],
@@ -129,7 +128,6 @@ export const readFileTool: AgentTool = {
       encoding: {
         type: 'string',
         description: '文件编码',
-        default: 'utf-8',
       },
     },
     required: ['path'],
@@ -162,7 +160,6 @@ export const writeFileTool: AgentTool = {
       append: {
         type: 'boolean',
         description: '是否追加模式',
-        default: false,
       },
     },
     required: ['path', 'content'],
@@ -189,7 +186,6 @@ export const listDirectoryTool: AgentTool = {
       recursive: {
         type: 'boolean',
         description: '是否递归列出子目录',
-        default: false,
       },
     },
     required: ['path'],
@@ -222,7 +218,6 @@ export const executeCommandTool: AgentTool = {
       timeout: {
         type: 'number',
         description: '超时时间（毫秒）',
-        default: 30000,
       },
     },
     required: ['command'],
@@ -251,7 +246,6 @@ export const httpRequestTool: AgentTool = {
         type: 'string',
         description: 'HTTP 方法',
         enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-        default: 'GET',
       },
       headers: {
         type: 'object',
@@ -349,7 +343,6 @@ export const analyzeCodeTool: AgentTool = {
         type: 'string',
         description: '分析重点',
         enum: ['bugs', 'performance', 'style', 'security', 'general'],
-        default: 'general',
       },
     },
     required: ['code', 'language'],
@@ -436,19 +429,3 @@ export function createToolSet(toolNames: string[]): AgentTool[] {
     .map((name) => getToolByName(name))
     .filter((tool): tool is AgentTool => tool !== undefined);
 }
-
-// 导出所有工具
-export {
-  thinkTool,
-  finishTool,
-  askUserTool,
-  searchTool,
-  readFileTool,
-  writeFileTool,
-  listDirectoryTool,
-  executeCommandTool,
-  httpRequestTool,
-  rememberTool,
-  recallTool,
-  analyzeCodeTool,
-};

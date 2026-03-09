@@ -270,6 +270,9 @@ const storage = new StorageManager({ defaultStorage: 'localStorage' });
 await storage.set('user', { name: '张三' });
 const user = await storage.getValue('user');
 
+// 获取底层存储实例
+const localStorageInstance = storage.getStorage('localStorage');
+
 // 直接使用
 const opfs = new OPFSStorage('my-app');
 await opfs.init();
@@ -664,7 +667,7 @@ ai-dev-framework/
 │       ├── ai/               # AI 相关模块
 │       │   ├── index.ts
 │       │   ├── core.ts       # 框架核心
-│       │   ├── request.ts    # HTTP 请求
+│       │   ├── ai-request.ts # AI 请求封装
 │       │   ├── parser.ts     # 响应解析
 │       │   ├── tokenize.ts   # Token 处理
 │       │   ├── query_build.ts # 请求构建
@@ -713,7 +716,8 @@ ai-dev-framework/
 ├── docs/                     # 任务管理文档（本地）
 ├── PROJECT.md                # 本文件
 ├── package.json
-└── tsconfig.json
+├── tsconfig.json
+└── vite.config.ts
 ```
 
 ---

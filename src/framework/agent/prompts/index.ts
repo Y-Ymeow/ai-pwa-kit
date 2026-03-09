@@ -3,7 +3,7 @@
  * Agent 专属 Prompt 模板
  */
 
-import type { PromptTemplate, PromptFragment } from '../../ai/prompts';
+import type { PromptTemplate } from '../../ai/prompts';
 
 /**
  * ReAct 框架 Prompt
@@ -281,14 +281,3 @@ ${systemPrompt}`,
     ],
   };
 }
-
-// 导出所有预设
-export {
-  reactPrompt,
-  plannerPrompt,
-  executorPrompt,
-  coderPrompt,
-  researcherPrompt,
-  conversationalPrompt,
-  systemPrompt,
-};

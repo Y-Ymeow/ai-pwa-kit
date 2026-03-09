@@ -3,8 +3,7 @@
  * Agent 模块的类型定义
  */
 
-import type { AIResponse } from '../types';
-import type { ToolDefinition, ToolResult } from '../ai/tools';
+import type { ToolDefinition } from '../ai/tools';
 
 /**
  * Agent 配置

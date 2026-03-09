@@ -58,7 +58,7 @@ interface EventSubscription<T = unknown> {
  * 事件总线类
  */
 export class EventBus {
-  private events = new Map<string, EventSubscription[]>();
+  private events = new Map<string, EventSubscription<any>[]>();
   private globalNamespace?: string;
   private idCounter = 0;
 
@@ -183,7 +183,7 @@ export class EventBus {
    * @param handler 事件处理器（可选，不传则取消所有）
    * @param namespace 命名空间
    */
-  off(event: string, handler?: EventHandler, namespace?: string): void {
+  off(event: string, handler?: EventHandler<any>, namespace?: string): void {
     const fullEvent = this.getFullEventName(event, namespace);
     const subscriptions = this.events.get(fullEvent);
 
@@ -222,7 +222,7 @@ export class EventBus {
     }
 
     // 复制数组以避免在迭代时修改
-    const toRemove: EventSubscription[] = [];
+    const toRemove: EventSubscription<any>[] = [];
 
     for (const subscription of [...subscriptions]) {
       try {

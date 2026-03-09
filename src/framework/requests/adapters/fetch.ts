@@ -8,8 +8,9 @@ import type {
   RequestConfig,
   ResponseData,
   StreamChunk,
-  RequestError,
 } from '../types';
+
+import { RequestError } from '../types';
 
 export class FetchAdapter implements IRequestAdapter {
   readonly name = 'fetch';

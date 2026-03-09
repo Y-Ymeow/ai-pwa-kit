@@ -6,7 +6,6 @@
 import type {
   IStorage,
   StorageType,
-  StorageConfig,
   StorageManagerConfig,
   StorageEntry,
   StorageValue,
@@ -30,7 +29,7 @@ export class StorageManager {
     this.enableEvents = config.enableEvents ?? false;
 
     // 初始化配置的存储
-    const storageConfigs = config.storages || {};
+    const storageConfigs = config.storages || {} as Record<string, any>;
 
     // OPFS
     if (!storageConfigs.opfs || storageConfigs.opfs.name !== false) {
@@ -67,7 +66,7 @@ export class StorageManager {
   /**
    * 获取存储实例
    */
-  get(type?: StorageType): IStorage {
+  getStorage(type?: StorageType): IStorage {
     const storageType = type || this.defaultType;
     const storage = this.storages.get(storageType);
     
@@ -82,7 +81,7 @@ export class StorageManager {
    * 获取默认存储
    */
   getDefault(): IStorage {
-    return this.get(this.defaultType);
+    return this.getStorage(this.defaultType);
   }
 
   /**
@@ -107,7 +106,7 @@ export class StorageManager {
    * 初始化指定存储
    */
   async init(type?: StorageType): Promise<void> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     await storage.init();
   }
 
@@ -156,8 +155,8 @@ export class StorageManager {
   /**
    * 获取值
    */
-  async get<T = StorageValue>(key: string, type?: StorageType): Promise<StorageEntry<T> | null> {
-    const storage = this.get(type);
+  async get<T extends StorageValue = StorageValue>(key: string, type?: StorageType): Promise<StorageEntry<T> | null> {
+    const storage = this.getStorage(type);
     const result = await storage.get<T>(key);
     
     if (result) {
@@ -175,7 +174,7 @@ export class StorageManager {
   /**
    * 获取值（仅返回值，不包含元数据）
    */
-  async getValue<T = StorageValue>(key: string, type?: StorageType): Promise<T | null> {
+  async getValue<T extends StorageValue = StorageValue>(key: string, type?: StorageType): Promise<T | null> {
     const entry = await this.get<T>(key, type);
     return entry?.value ?? null;
   }
@@ -183,14 +182,14 @@ export class StorageManager {
   /**
    * 设置值
    */
-  async set<T = StorageValue>(
+  async set<T extends StorageValue = StorageValue>(
     key: string,
     value: T,
     ttl?: number,
     metadata?: Record<string, unknown>,
     type?: StorageType
   ): Promise<void> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     await storage.set(key, value, ttl, metadata);
     
     this.emit({
@@ -205,7 +204,7 @@ export class StorageManager {
    * 删除值
    */
   async delete(key: string, type?: StorageType): Promise<boolean> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     const result = await storage.delete(key);
     
     if (result) {
@@ -224,7 +223,7 @@ export class StorageManager {
    * 检查键是否存在
    */
   async has(key: string, type?: StorageType): Promise<boolean> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     return storage.has(key);
   }
 
@@ -232,15 +231,15 @@ export class StorageManager {
    * 获取所有键
    */
   async keys(type?: StorageType): Promise<string[]> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     return storage.keys();
   }
 
   /**
    * 获取所有条目
    */
-  async getAll<T = StorageValue>(options?: StorageQueryOptions, type?: StorageType): Promise<StorageEntry<T>[]> {
-    const storage = this.get(type);
+  async getAll<T extends StorageValue = StorageValue>(options?: StorageQueryOptions, type?: StorageType): Promise<StorageEntry<T>[]> {
+    const storage = this.getStorage(type);
     return storage.getAll<T>(options);
   }
 
@@ -248,7 +247,7 @@ export class StorageManager {
    * 清空存储
    */
   async clear(type?: StorageType): Promise<void> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     await storage.clear();
     
     this.emit({
@@ -276,7 +275,7 @@ export class StorageManager {
    * 清理过期条目
    */
   async cleanup(type?: StorageType): Promise<number> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     const count = await storage.cleanup();
     
     if (count > 0) {
@@ -307,7 +306,7 @@ export class StorageManager {
    * 获取存储统计
    */
   async getStats(type?: StorageType): Promise<StorageStats> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     return storage.getStats();
   }
 
@@ -328,7 +327,7 @@ export class StorageManager {
    * 导出数据
    */
   async export(type?: StorageType): Promise<string> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     return storage.export();
   }
 
@@ -336,7 +335,7 @@ export class StorageManager {
    * 导入数据
    */
   async import(data: string, type?: StorageType): Promise<void> {
-    const storage = this.get(type);
+    const storage = this.getStorage(type);
     await storage.import(data);
   }
 
@@ -344,8 +343,8 @@ export class StorageManager {
    * 在存储之间迁移数据
    */
   async migrate(fromType: StorageType, toType: StorageType): Promise<number> {
-    const fromStorage = this.get(fromType);
-    const toStorage = this.get(toType);
+    const fromStorage = this.getStorage(fromType);
+    const toStorage = this.getStorage(toType);
 
     const data = await fromStorage.export();
     await toStorage.import(data);

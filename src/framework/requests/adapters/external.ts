@@ -9,15 +9,16 @@ import type {
   RequestConfig,
   ResponseData,
   StreamChunk,
-  RequestError,
   ExternalRequestInterface,
   ExternalAdapterConfig,
 } from '../types';
 
+import { RequestError } from '../types';
+
 /**
  * 油猴 GM_xmlhttpRequest 接口定义
  */
-export interface GM_xmlhttpRequest {
+export interface GMXmlHttpRequest {
   (details: {
     method?: string;
     url: string;
@@ -39,7 +40,32 @@ export interface GM_xmlhttpRequest {
 }
 
 /**
- * Chrome 插件消息接口
+ * Chrome 运行时接口
+ */
+export interface ChromeRuntime {
+  lastError?: { message: string };
+  sendMessage: (
+    extensionIdOrMessage: string | unknown,
+    messageOrCallback?: unknown | ((response: unknown) => void),
+    callback?: (response: unknown) => void
+  ) => void;
+  onMessage: {
+    addListener: (callback: (message: unknown, sender: unknown, sendResponse: (response: unknown) => void) => void) => void;
+  };
+  onConnect: {
+    addListener: (callback: (port: unknown) => void) => void;
+  };
+}
+
+/**
+ * Chrome 接口
+ */
+export interface ChromeGlobal {
+  runtime?: ChromeRuntime;
+}
+
+/**
+ * Chrome 插件消息接口（导出用于类型兼容）
  */
 export interface ChromeExtensionInterface {
   sendMessage: (
@@ -166,22 +192,33 @@ export class ExternalAdapter implements IRequestAdapter {
 }
 
 /**
+ * 获取油猴 GM_xmlhttpRequest 函数
+ */
+function getGMXmlHttpRequest(): GMXmlHttpRequest | undefined {
+  if (typeof window === 'undefined') return undefined;
+  
+  const win = window as {
+    unsafeWindow?: { GM_xmlhttpRequest?: GMXmlHttpRequest };
+    GM_xmlhttpRequest?: GMXmlHttpRequest;
+  };
+  
+  return win.unsafeWindow?.GM_xmlhttpRequest || win.GM_xmlhttpRequest;
+}
+
+/**
  * 创建油猴适配器
  * 自动检测 GM_xmlhttpRequest 并包装
  */
-export function createGMAdapter(): ExternalAdapter {
+export function createGMAdapter(): ExternalAdapter | null {
+  const gmXHR = getGMXmlHttpRequest();
+  
+  if (!gmXHR) {
+    return null;
+  }
+
   return new ExternalAdapter({
     name: 'gm_xhr',
     getInterface: () => {
-      // 检测油猴环境
-      const unsafeWindow = (typeof window !== 'undefined' && (window as { unsafeWindow?: { GM_xmlhttpRequest?: GM_xmlhttpRequest } }).unsafeWindow);
-      const gmXHR = unsafeWindow?.GM_xmlhttpRequest ||
-        (typeof GM_xmlhttpRequest !== 'undefined' ? GM_xmlhttpRequest : undefined);
-
-      if (!gmXHR) {
-        return null;
-      }
-
       return {
         request: <T = unknown>(config: RequestConfig): Promise<ResponseData<T>> => {
           return new Promise((resolve, reject) => {
@@ -196,7 +233,7 @@ export function createGMAdapter(): ExternalAdapter {
               responseType: config.responseType === 'arraybuffer' ? 'arraybuffer' : 'text',
               onload: (response) => {
                 // 解析响应头
-                const headerLines = response.responseHeaders.split('\n');
+                const headerLines = (response.responseHeaders || '').split('\n');
                 for (const line of headerLines) {
                   const [key, ...valueParts] = line.split(':');
                   if (key && valueParts.length > 0) {
@@ -237,7 +274,7 @@ export function createGMAdapter(): ExternalAdapter {
 
         stream: async function* (config: RequestConfig): AsyncIterableIterator<StreamChunk> {
           const controller = { aborted: false };
-          
+
           // 如果支持 signal
           config.signal?.addEventListener('abort', () => {
             controller.aborted = true;
@@ -253,9 +290,7 @@ export function createGMAdapter(): ExternalAdapter {
             data: config.body ? JSON.stringify(config.body) : undefined,
             timeout: config.timeout || 30000,
             responseType: 'text',
-            onreadystatechange: (response) => {
-              // 可以在这里实现真正的流式
-              // 但目前 GM_xmlhttpRequest 不支持真正的流式响应
+            onreadystatechange: () => {
               if (controller.aborted) {
                 xhr.abort();
               }
@@ -266,7 +301,6 @@ export function createGMAdapter(): ExternalAdapter {
           });
 
           // GM_xmlhttpRequest 不支持真正的流式，所以等待完成后返回
-          // 这是一个简化的实现
           const response = await new Promise<ResponseData<string>>((resolve, reject) => {
             gmXHR({
               method: config.method || 'POST',
@@ -279,19 +313,19 @@ export function createGMAdapter(): ExternalAdapter {
               timeout: config.timeout || 30000,
               responseType: 'text',
               onload: (res) => {
-                const headers: Record<string, string> = {};
-                const headerLines = res.responseHeaders.split('\n');
+                const hdrs: Record<string, string> = {};
+                const headerLines = (res.responseHeaders || '').split('\n');
                 for (const line of headerLines) {
                   const [key, ...valueParts] = line.split(':');
                   if (key && valueParts.length > 0) {
-                    headers[key.trim().toLowerCase()] = valueParts.join(':').trim();
+                    hdrs[key.trim().toLowerCase()] = valueParts.join(':').trim();
                   }
                 }
                 resolve({
                   data: res.responseText,
                   status: res.status,
                   statusText: res.statusText,
-                  headers,
+                  headers: hdrs,
                 });
               },
               onerror: reject,
@@ -313,20 +347,31 @@ export function createGMAdapter(): ExternalAdapter {
 }
 
 /**
+ * 获取 Chrome 运行时
+ */
+function getChromeRuntime(): ChromeRuntime | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const chrome = (window as { chrome?: ChromeGlobal }).chrome;
+  return chrome?.runtime;
+}
+
+/**
  * 创建 Chrome 插件适配器
  */
-export function createChromeAdapter(extensionId?: string): ExternalAdapter {
+export function createChromeAdapter(extensionId?: string): ExternalAdapter | null {
+  const runtime = getChromeRuntime();
+  
+  if (!runtime || !runtime.sendMessage) {
+    return null;
+  }
+
+  const sendMessage = extensionId
+    ? (msg: unknown, cb: (response: unknown) => void) => runtime.sendMessage!(extensionId, msg, cb)
+    : (msg: unknown, cb: (response: unknown) => void) => runtime.sendMessage!(msg, cb);
+
   return new ExternalAdapter({
     name: 'chrome_extension',
     getInterface: () => {
-      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
-        return null;
-      }
-
-      const sendMessage = extensionId
-        ? (msg: unknown, cb: (response: unknown) => void) => chrome.runtime.sendMessage(extensionId, msg, cb)
-        : (msg: unknown, cb: (response: unknown) => void) => chrome.runtime.sendMessage(msg, cb);
-
       return {
         request: <T = unknown>(config: RequestConfig): Promise<ResponseData<T>> => {
           return new Promise((resolve, reject) => {
@@ -336,8 +381,8 @@ export function createChromeAdapter(extensionId?: string): ExternalAdapter {
                 config,
               },
               (response) => {
-                if (chrome.runtime.lastError) {
-                  reject(new RequestError(chrome.runtime.lastError.message, {
+                if (runtime.lastError) {
+                  reject(new RequestError(runtime.lastError.message, {
                     isNetworkError: true,
                   }));
                   return;
@@ -402,13 +447,12 @@ function buildURL(url: string, params?: Record<string, unknown>): string {
  */
 export function createAutoExternalAdapter(): ExternalAdapter | null {
   // 优先尝试油猴
-  if (typeof GM_xmlhttpRequest !== 'undefined' ||
-      (typeof window !== 'undefined' && (window as { unsafeWindow?: { GM_xmlhttpRequest?: unknown } }).unsafeWindow?.GM_xmlhttpRequest)) {
+  if (getGMXmlHttpRequest()) {
     return createGMAdapter();
   }
 
   // 然后尝试 Chrome 插件
-  if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+  if (getChromeRuntime()) {
     return createChromeAdapter();
   }
 

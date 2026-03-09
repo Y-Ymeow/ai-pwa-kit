@@ -10,9 +10,9 @@ import {
   type ThinkingArgs,
 } from "./index";
 import type { AIResponse, AIStreamChunk } from "../../types";
-import { sendRequest, streamGenerator, RequestError } from "../../request";
 import { parseOpenAIResponse } from "../parser";
-import { buildOpenAIHeaders } from "../../query_build";
+import { buildOpenAIHeaders } from "../query_build";
+import { createAIRequestManager, RequestError } from "../ai-request";
 
 export interface OpenAIConfig extends ProviderStorageItem {
   /** Organization ID */
@@ -146,7 +146,8 @@ export class OpenAIProvider extends BaseProvider {
     const headers = this.buildHeaders();
 
     try {
-      const response = await sendRequest<unknown>({
+      const manager = createAIRequestManager();
+      const response = await manager.request<unknown>({
         url: `${this.baseUrl}/chat/completions`,
         method: "POST",
         headers,
@@ -172,15 +173,16 @@ export class OpenAIProvider extends BaseProvider {
     });
     const headers = this.buildHeaders();
 
-    const generator = streamGenerator({
+    const manager = createAIRequestManager();
+
+    for await (const chunk of manager.stream({
       url: `${this.baseUrl}/chat/completions`,
+      method: "POST",
       headers,
       body,
       timeout: this.config.timeout,
-    });
-
-    for await (const chunk of generator) {
-      yield chunk;
+    })) {
+      yield chunk as AIStreamChunk;
     }
   }
 
@@ -189,7 +191,8 @@ export class OpenAIProvider extends BaseProvider {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await sendRequest<unknown>({
+      const manager = createAIRequestManager();
+      const response = await manager.request<unknown>({
         url: `${this.baseUrl}/models`,
         method: "GET",
         headers: this.buildHeaders(),
@@ -206,7 +209,8 @@ export class OpenAIProvider extends BaseProvider {
    */
   async listModels(): Promise<string[]> {
     try {
-      const response = await sendRequest<{ data: { id: string }[] }>({
+      const manager = createAIRequestManager();
+      const response = await manager.request<{ data: { id: string }[] }>({
         url: `${this.baseUrl}/models`,
         method: "GET",
         headers: this.buildHeaders(),

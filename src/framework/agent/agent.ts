@@ -15,7 +15,7 @@ import type {
   AgentRuntimeConfig,
 } from './types';
 import type { FrameworkCore } from '../ai/core';
-import type { AIResponse, AIStreamChunk } from '../types';
+import type { AIResponse } from '../types';
 import { getPresetPrompt } from './prompts';
 import { getToolByName, getBasicTools } from './tools';
 import type { AgentTool } from './types';

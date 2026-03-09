@@ -12,6 +12,7 @@ import type {
   StorageQueryOptions,
   StorageStats,
 } from './types';
+import { defaultEncryption } from './types';
 
 export class MemoryStorage implements IStorage {
   readonly type: StorageType = 'memory';
@@ -30,7 +31,7 @@ export class MemoryStorage implements IStorage {
         stringify: JSON.stringify,
         parse: JSON.parse,
       },
-      encryption: config.encryption,
+      encryption: config.encryption ?? defaultEncryption,
     };
   }
 
@@ -91,7 +92,7 @@ export class MemoryStorage implements IStorage {
   /**
    * 获取值
    */
-  async get<T = StorageValue>(key: string): Promise<StorageEntry<T> | null> {
+  async get<T extends StorageValue = StorageValue>(key: string): Promise<StorageEntry<T> | null> {
     this.ensureInitialized();
 
     const entry = this.store.get(key);
@@ -118,7 +119,7 @@ export class MemoryStorage implements IStorage {
   /**
    * 设置值
    */
-  async set<T = StorageValue>(
+  async set<T extends StorageValue = StorageValue>(
     key: string,
     value: T,
     ttl?: number,
@@ -182,7 +183,7 @@ export class MemoryStorage implements IStorage {
   /**
    * 获取所有条目
    */
-  async getAll<T = StorageValue>(options: StorageQueryOptions = {}): Promise<StorageEntry<T>[]> {
+  async getAll<T extends StorageValue = StorageValue>(options: StorageQueryOptions = {}): Promise<StorageEntry<T>[]> {
     const keys = await this.keys();
     const entries: StorageEntry<T>[] = [];
 

@@ -14,9 +14,9 @@ import type {
 /**
  * IndexedDB 数据库管理器
  */
-export class IDBDatabase {
+export class DatabaseManager {
   private config: Required<DatabaseConfig>;
-  private db: IDBDatabase | null = null;
+  private db: globalThis.IDBDatabase | null = null;
   private initialized = false;
   private migrations: MigrationVersion[] = [];
 
@@ -469,21 +469,25 @@ export class IDBDatabase {
 /**
  * 数据库管理器工厂
  */
-export function createDatabase(config: DatabaseConfig): IDBDatabase {
-  return new IDBDatabase(config);
+export function createDatabase(config: DatabaseConfig): DatabaseManager {
+  return new DatabaseManager(config);
 }
 
 /**
  * 全局数据库实例存储
  */
-const databaseInstances: Map<string, IDBDatabase> = new Map();
+const databaseInstances: Map<string, DatabaseManager> = new Map();
 
 /**
  * 获取或创建数据库实例
  */
-export function getDatabase(name: string, config?: Omit<DatabaseConfig, 'name'>): IDBDatabase {
+export function getDatabase(name: string, config?: Omit<DatabaseConfig, 'name'>): DatabaseManager {
   if (!databaseInstances.has(name)) {
-    databaseInstances.set(name, new IDBDatabase({ name, ...config }));
+    databaseInstances.set(name, new DatabaseManager({ 
+      name, 
+      version: 1,
+      ...config 
+    }));
   }
   return databaseInstances.get(name)!;
 }

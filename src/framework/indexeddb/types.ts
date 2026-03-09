@@ -20,6 +20,8 @@ export interface FieldDefinition {
   autoIncrement?: boolean;
   /** 是否可空 */
   nullable?: boolean;
+  /** 是否必填 */
+  required?: boolean;
   /** 默认值 */
   default?: unknown;
   /** 是否唯一 */

@@ -49,11 +49,11 @@ export class SliceStore<T> {
 
       if (typeof updater === 'function') {
         const result = (updater as (prev: T) => T | Partial<T>)(sliceState);
-        newSliceState = typeof result === 'object' && !Array.isArray(result)
-          ? { ...sliceState, ...result } as T
+        newSliceState = typeof result === 'object' && result !== null && !Array.isArray(result)
+          ? { ...sliceState, ...(result as Record<string, unknown>) } as T
           : result as T;
       } else {
-        newSliceState = { ...sliceState, ...updater } as T;
+        newSliceState = { ...sliceState, ...(updater as Record<string, unknown>) } as T;
       }
 
       return {
@@ -145,7 +145,7 @@ export function combineSlices<T extends Record<string, unknown>>(
 
   for (const [key, slice] of Object.entries(slices)) {
     (initialState as Record<string, unknown>)[key] = slice.initialState;
-    reducers[key] = slice.reducer;
+    reducers[key] = slice.reducer as unknown as (state: unknown, action: StateAction) => unknown;
   }
 
   return { initialState, reducers };
@@ -192,9 +192,9 @@ export const counterSlice = createSlice({
   name: 'counter',
   initialState: { value: 0 },
   reducers: {
-    increment: (state) => ({ value: state.value + 1 }),
-    decrement: (state) => ({ value: state.value - 1 }),
-    add: (state, payload: number) => ({ value: state.value + payload }),
+    increment: (state) => ({ value: (state as { value: number }).value + 1 }),
+    decrement: (state) => ({ value: (state as { value: number }).value - 1 }),
+    add: (state, payload: unknown) => ({ value: (state as { value: number }).value + (payload as number) }),
     reset: () => ({ value: 0 }),
   },
 });
@@ -210,20 +210,23 @@ export const userSlice = createSlice({
     isLogin: false,
   },
   reducers: {
-    setUser: (state, payload: { name: string; email: string }) => ({
-      ...state,
-      name: payload.name,
-      email: payload.email,
-      isLogin: true,
-    }),
+    setUser: (state, payload: unknown) => {
+      const p = payload as { name: string; email: string };
+      return {
+        ...(state as { name: string; email: string; isLogin: boolean }),
+        name: p.name,
+        email: p.email,
+        isLogin: true,
+      };
+    },
     logout: () => ({
       name: '',
       email: '',
       isLogin: false,
     }),
-    updateName: (state, payload: string) => ({
-      ...state,
-      name: payload,
+    updateName: (state, payload: unknown) => ({
+      ...(state as { name: string; email: string; isLogin: boolean }),
+      name: payload as string,
     }),
   },
 });
@@ -239,16 +242,19 @@ export const themeSlice = createSlice({
   },
   reducers: {
     toggle: (state) => ({
-      ...state,
-      mode: state.mode === 'light' ? 'dark' : 'light',
+      ...(state as { mode: 'light' | 'dark'; color: string }),
+      mode: (state as { mode: 'light' | 'dark'; color: string }).mode === 'light' ? 'dark' as const : 'light' as const,
     }),
-    setMode: (state, payload: 'light' | 'dark') => ({
-      ...state,
-      mode: payload,
-    }),
-    setColor: (state, payload: string) => ({
-      ...state,
-      color: payload,
+    setMode: (state, payload: unknown) => {
+      const s = state as { mode: 'light' | 'dark'; color: string };
+      return {
+        ...s,
+        mode: payload as 'light' | 'dark',
+      };
+    },
+    setColor: (state, payload: unknown) => ({
+      ...(state as { mode: 'light' | 'dark'; color: string }),
+      color: payload as string,
     }),
   },
 });

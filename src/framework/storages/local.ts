@@ -12,6 +12,7 @@ import type {
   StorageQueryOptions,
   StorageStats,
 } from './types';
+import { defaultEncryption } from './types';
 
 export class LocalStorage implements IStorage {
   readonly type: StorageType = 'localStorage';
@@ -31,7 +32,7 @@ export class LocalStorage implements IStorage {
         stringify: JSON.stringify,
         parse: JSON.parse,
       },
-      encryption: config.encryption,
+      encryption: config.encryption ?? defaultEncryption,
     };
   }
 
@@ -116,7 +117,7 @@ export class LocalStorage implements IStorage {
   /**
    * 获取值
    */
-  async get<T = StorageValue>(key: string): Promise<StorageEntry<T> | null> {
+  async get<T extends StorageValue = StorageValue>(key: string): Promise<StorageEntry<T> | null> {
     this.ensureInitialized();
 
     try {
@@ -127,7 +128,7 @@ export class LocalStorage implements IStorage {
         return null;
       }
 
-      const entry = this.deserialize<StorageEntry<T>>(data);
+      const entry = this.deserialize<StorageEntry<StorageValue>>(data);
 
       // 检查是否过期
       if (this.isExpired(entry)) {
@@ -135,7 +136,7 @@ export class LocalStorage implements IStorage {
         return null;
       }
 
-      return entry;
+      return entry as StorageEntry<T>;
     } catch (error) {
       throw new Error(`Failed to get entry: ${error}`);
     }
@@ -144,7 +145,7 @@ export class LocalStorage implements IStorage {
   /**
    * 设置值
    */
-  async set<T = StorageValue>(
+  async set<T extends StorageValue = StorageValue>(
     key: string,
     value: T,
     ttl?: number,
@@ -239,7 +240,7 @@ export class LocalStorage implements IStorage {
   /**
    * 获取所有条目
    */
-  async getAll<T = StorageValue>(options: StorageQueryOptions = {}): Promise<StorageEntry<T>[]> {
+  async getAll<T extends StorageValue = StorageValue>(options: StorageQueryOptions = {}): Promise<StorageEntry<T>[]> {
     const keys = await this.keys();
     const entries: StorageEntry<T>[] = [];
 
